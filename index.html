@@ -146,6 +146,56 @@ function typeLine(){
 }
 
 typeLine();
+
+<script>
+
+/* =========================
+   IP SCANNER ANIMATION
+========================= */
+
+const scanner = document.createElement("div");
+scanner.style.marginTop = "30px";
+scanner.style.fontSize = "18px";
+document.querySelector(".terminal").appendChild(scanner);
+
+function randomIP(){
+    return "192.168." +
+        Math.floor(Math.random()*255) + "." +
+        Math.floor(Math.random()*255);
+}
+
+const statusList = [
+    "ONLINE",
+    "OPEN PORTS",
+    "SECURED",
+    "RESPONDING",
+    "VULNERABLE",
+    "TIMEOUT"
+];
+
+function scanIP(){
+
+    const line = document.createElement("div");
+
+    const ip = randomIP();
+    const status =
+        statusList[Math.floor(Math.random()*statusList.length)];
+
+    line.textContent = "> scanning " + ip + " ... " + status;
+
+    scanner.appendChild(line);
+
+    // auto scroll
+    window.scrollTo(0, document.body.scrollHeight);
+
+    // limit lines
+    if(scanner.children.length > 15){
+        scanner.removeChild(scanner.firstChild);
+    }
+}
+
+setInterval(scanIP, 800);
+
 </script>
 
 </body>
