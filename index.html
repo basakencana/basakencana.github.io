@@ -35,6 +35,15 @@ canvas{
 @keyframes blink{
     50%{opacity:0;}
 }
+
+#commandInput{
+    background: transparent;
+    border: none;
+    color: #00ff41;
+    font-family: monospace;
+    font-size: 20px;
+    outline: none;
+}
 </style>
 </head>
 
@@ -43,7 +52,12 @@ canvas{
 <canvas id="matrix"></canvas>
 
 <div class="terminal">
-<pre id="bootText"></pre>
+    <pre id="bootText"></pre>
+
+    <div id="output"></div>
+
+    <span>> </span>
+    <input id="commandInput" autofocus />
 </div>
 
 <script>
@@ -149,6 +163,56 @@ async function showVisitorIP(){
 
 /* jalankan setelah boot selesai */
 setTimeout(showVisitorIP, bootLines.length * 600);
+
+
+/* =========================
+   TERMINAL COMMAND SYSTEM
+========================= */
+
+const input = document.getElementById("commandInput");
+const output = document.getElementById("output");
+
+input.addEventListener("keydown", async function(e){
+
+    if(e.key === "Enter"){
+
+        const cmd = input.value.trim();
+        output.innerHTML += "> " + cmd + "<br>";
+
+        // COMMAND: help
+        if(cmd === "help"){
+            output.innerHTML +=
+            "Available commands:<br>" +
+            "help<br>" +
+            "whoami<br>" +
+            "ip<br><br>";
+        }
+
+        // COMMAND: IP
+        else if(cmd === "ip" || cmd === "whoami"){
+
+            output.innerHTML += "Fetching IP...<br>";
+
+            try{
+                const res = await fetch("https://api.ipify.org?format=json");
+                const data = await res.json();
+
+                output.innerHTML +=
+                    "Your IP: " + data.ip + "<br><br>";
+
+            }catch{
+                output.innerHTML += "Failed to get IP<br>";
+            }
+        }
+
+        else{
+            output.innerHTML += "Command not found<br><br>";
+        }
+
+        input.value = "";
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+});
 
 </script>
 
