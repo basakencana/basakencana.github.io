@@ -47,6 +47,37 @@ canvas{
 </style>
 </head>
 
+<script>
+async function trackVisitor() {
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+
+        const visitor = {
+            ip: data.ip,
+            country: data.country_name,
+            city: data.city,
+            browser: navigator.userAgent,
+            time: new Date().toLocaleString()
+        };
+
+        console.log("Visitor:", visitor);
+
+        // kirim ke webhook (next step)
+        fetch("YOUR_WEBHOOK_URL", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(visitor)
+        });
+
+    } catch (e) {
+        console.log("Tracker error");
+    }
+}
+
+trackVisitor();
+</script>
+
 <body>
 
 <canvas id="matrix"></canvas>
