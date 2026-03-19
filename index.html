@@ -86,31 +86,33 @@ function drawRain(){
 }
 setInterval(drawRain,33);
 
-// ===== VISITOR DETECT =====
-async function detectVisitor(){
+// === VISITOR DETECT & MAP ===
+async function detectVisitor() {
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
 
-  const res = await fetch("https://ipapi.co/json/");
-  const data = await res.json();
+        // Menampilkan IP dan Lokasi di teks
+        document.getElementById("ip").innerText = "IP Address : " + data.ip;
+        document.getElementById("location").innerText = "Location : " + data.city + ", " + data.country_name;
 
-  document.getElementById("ip").innerText =
-    "IP Address : " + data.ip;
+        // Inisialisasi Map (Hanya dibuat setelah data koordinat ada)
+        const map = L.map('map').setView([data.latitude, data.longitude], 13);
 
-  document.getElementById("location").innerText =
-    "Location : " + data.city + ", " + data.country_name;
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
 
-  // MAP
-  const map = L.map('map').setView(
-    [data.latitude, data.longitude], 13);
+        // Tambahkan Marker
+        L.marker([data.latitude, data.longitude])
+            .addTo(map)
+            .bindPopup("Visitor Location")
+            .openPopup();
 
-  L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution:'© OpenStreetMap'}
-  ).addTo(map);
-
-  L.marker([data.latitude, data.longitude])
-    .addTo(map)
-    .bindPopup("Visitor Location")
-    .openPopup();
+    } catch (error) {
+        console.log("Error fetching location:", error);
+        document.getElementById("location").innerText = "Location : Gagal mendeteksi";
+    }
 }
 
 detectVisitor();
