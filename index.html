@@ -86,49 +86,50 @@ function drawRain(){
 }
 setInterval(drawRain,33);
 
-// === VISITOR DETECT & MAP ===
 async function detectVisitor() {
     try {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
 
-fetch("ISI_URL_WEBHOOK_DISCORD_KAMU_DI_SINI", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-        embeds: [{
-            title: "🚨 Visitor Detected!",
-            color: 65280, // Warna hijau hacker
-            fields: [
-                { name: "IP Address", value: data.ip, inline: true },
-                { name: "Location", value: `${data.city}, ${data.region}`, inline: true },
-                { name: "User Agent", value: navigator.userAgent }
-            ],
-            timestamp: new Date()
-        }]
-    })
-});
+  
+        const webhookURL = "MASUKKAN_URL_WEBHOOK_DISCORD_KAMU_DI_SINI";
 
+        const pesanDiscord = {
+            username: "BASANKENCANA TRACKER",
+            embeds: [{
+                title: "🚨 PENGUNJUNG BARU!",
+                color: 5763719,
+                fields: [
+                    { name: "🌐 IP Address", value: `**${data.ip}**`, inline: true },
+                    { name: "📍 Lokasi", value: `${data.city}, ${data.region}, ${data.country_name}`, inline: true },
+                    { name: "🏢 ISP", value: data.org, inline: false }
+                ],
+                timestamp: new Date()
+            }]
+        };
+
+        
+        fetch(webhookURL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pesanDiscord)
+        });
+
+        
         document.getElementById("ip").innerText = "IP Address : " + data.ip;
         document.getElementById("location").innerText = "Location : " + data.city + ", " + data.country_name;
 
+        
         const map = L.map('map').setView([data.latitude, data.longitude], 13);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-
-
-        L.marker([data.latitude, data.longitude])
-            .addTo(map)
-            .bindPopup("Visitor Location")
-            .openPopup();
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([data.latitude, data.longitude]).addTo(map)
+            .bindPopup("Visitor Location").openPopup();
 
     } catch (error) {
-        console.log("Error fetching location:", error);
-        document.getElementById("location").innerText = "Location : Gagal mendeteksi";
+        console.log("Error:", error);
     }
 }
+
 
 detectVisitor();
 </script>
