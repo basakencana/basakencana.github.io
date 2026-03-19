@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>ACCESS TERMINAL</title>
+  <!-- LEAFLET MAP -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+</head>
 <style>
 body{
     margin:0;
@@ -48,28 +52,34 @@ canvas{
 </head>
 
 <script>
-async function trackVisitor() {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
+const response = await fetch("https://ipapi.co/json/");
+const data = await response.json();
 
-    // ambil element <p id="ip">
-    const ipBox = document.getElementById("ip");
-
-    ipBox.innerHTML = `
-IP Address: ${data.ip}<br>
-City: ${data.city}<br>
-Country: ${data.country_name}<br>
-Status: CONNECTED
+boot.textContent += `
+Detecting visitor...
+IP Address: ${data.ip}
+City: ${data.city}
+Country: ${data.country_name}
+Latitude: ${data.latitude}
+Longitude: ${data.longitude}
+STATUS: CONNECTED
 `;
 
-  } catch (e) {
-    document.getElementById("ip").innerText =
-      "Unable to detect IP";
-  }
-}
+/* ===== MAP ===== */
 
-trackVisitor();
+const map = L.map('map').setView(
+  [data.latitude, data.longitude],
+  10
+);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: 'Map data © OpenStreetMap'
+}).addTo(map);
+
+L.marker([data.latitude, data.longitude])
+  .addTo(map)
+  .bindPopup("Visitor Location")
+  .openPopup();
 </script>
 <script>
 console.log("WEBSITE UPDATED ✅");
@@ -106,6 +116,15 @@ Detecting IP...
 <span>> </span>
 <input id="commandInput" autofocus>
 
+<div id="map" style="
+position:absolute;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+width:400px;
+height:250px;
+border:1px solid #00ff00;
+z-index:2;">
 </div>
 
 <script>
