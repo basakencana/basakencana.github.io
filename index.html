@@ -49,30 +49,24 @@ canvas{
 
 <script>
 async function trackVisitor() {
-    try {
-        const res = await fetch("https://ipapi.co/json/");
-        const data = await res.json();
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
 
-        const visitor = {
-            ip: data.ip,
-            country: data.country_name,
-            city: data.city,
-            browser: navigator.userAgent,
-            time: new Date().toLocaleString()
-        };
+    // ambil element <p id="ip">
+    const ipBox = document.getElementById("ip");
 
-        console.log("Visitor:", visitor);
+    ipBox.innerHTML = `
+IP Address: ${data.ip}<br>
+City: ${data.city}<br>
+Country: ${data.country_name}<br>
+Status: CONNECTED
+`;
 
-        // kirim ke webhook (next step)
-        fetch("YOUR_WEBHOOK_URL", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(visitor)
-        });
-
-    } catch (e) {
-        console.log("Tracker error");
-    }
+  } catch (e) {
+    document.getElementById("ip").innerText =
+      "Unable to detect IP";
+  }
 }
 
 trackVisitor();
