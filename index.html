@@ -3,79 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <title>Basakencana Map</title>
-  <!-- LEAFLET MAP -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<link rel="stylesheet"
+ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
 body{
-    margin:0;
-    background:black;
-    color:#00ff41;
-    font-family:monospace;
-    overflow:hidden;
+  margin:0;
+  background:black;
+  color:#00ff41;
+  font-family:monospace;
+  text-align:center;
+  overflow:hidden;
 }
 
 canvas{
-    position:fixed;
-    top:0;
-    left:0;
-    z-index:-1;
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
 }
 
-.terminal{
-    padding:40px;
-    max-width:900px;
+.container{
+  margin-top:60px;
 }
 
-.cursor{
-    display:inline-block;
-    width:10px;
-    background:#00ff41;
-    animation:blink 1s infinite;
-}
-
-@keyframes blink{
-    50%{opacity:0;}
-}
-
-#commandInput{
-    background: transparent;
-    border: none;
-    color: #00ff41;
-    font-family: monospace;
-    font-size: 20px;
-    outline: none;
+#map{
+  height:400px;
+  width:80%;
+  margin:20px auto;
+  border:2px solid #00ff41;
 }
 </style>
 </head>
 
+<body>
+
+<canvas id="rain"></canvas>
+
+<div class="container">
+<h1>WELCOME TO BASAKENCANA</h1>
+
+<p id="ip">Detecting visitor...</p>
+<p id="location"></p>
+
+<div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
+// ===== MATRIX RAIN =====
+const canvas = document.getElementById("rain");
+const ctx = canvas.getContext("2d");
 
-async function detectVisitor() {
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  const response = await fetch("https://ipapi.co/json/");
-  const data = await response.json();
+const letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const fontSize = 14;
+const columns = canvas.width / fontSize;
 
-  boot.textContent = `
-Detecting visitor...
-IP Address: ${data.ip}
-City: ${data.city}
-Country: ${data.country_name}
-Latitude: ${data.latitude}
-Longitude: ${data.longitude}
-STATUS: CONNECTED
-`;
+const drops = [];
+for(let x=0;x<columns;x++) drops[x]=1;
 
-  /* ===== MAP ===== */
+function drawRain(){
+  ctx.fillStyle="rgba(0,0,0,0.05)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle="#00ff41";
+  ctx.font=fontSize+"px monospace";
+
+  for(let i=0;i<drops.length;i++){
+    const text=letters[Math.floor(Math.random()*letters.length)];
+    ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+
+    if(drops[i]*fontSize>canvas.height && Math.random()>0.975)
+      drops[i]=0;
+
+    drops[i]++;
+  }
+}
+setInterval(drawRain,33);
+
+// ===== VISITOR DETECT =====
+async function detectVisitor(){
+
+  const res = await fetch("https://ipapi.co/json/");
+  const data = await res.json();
+
+  document.getElementById("ip").innerText =
+    "IP Address : " + data.ip;
+
+  document.getElementById("location").innerText =
+    "Location : " + data.city + ", " + data.country_name;
+
+  // MAP
   const map = L.map('map').setView(
-    [data.latitude, data.longitude],
-    13
-  );
+    [data.latitude, data.longitude], 13);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data © OpenStreetMap'
-  }).addTo(map);
+  L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution:'© OpenStreetMap'}
+  ).addTo(map);
 
   L.marker([data.latitude, data.longitude])
     .addTo(map)
@@ -84,246 +114,7 @@ STATUS: CONNECTED
 }
 
 detectVisitor();
-
-console.log("WEBSITE UPDATED ✅");
-</script>
-
-<body>
-
-<h1 style="
-position:absolute;
-top:40%;
-width:100%;
-text-align:center;
-color:#00ff00;">
-WELCOME TO BASAKENCANA
-</h1>
-
-<p id="ip" style="
-position:absolute;
-top:55%;
-width:100%;
-text-align:center;
-color:#00ff00;
-font-size:20px;">
-Detecting IP...
-</p>
-
-<canvas id="matrix"></canvas>
-
-<div class="terminal">
-
-<pre id="bootText"></pre>
-
-<div id="output"></div>
-
-<span>> </span>
-<input id="commandInput" autofocus>
-
-<div id="map" style="
-position:absolute;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-width:400px;
-height:250px;
-border:1px solid #00ff00;
-z-index:2;">
-</div>
-
-<script>
-
-/* ================= MATRIX RAIN ================= */
-
-const canvas=document.getElementById("matrix");
-const ctx=canvas.getContext("2d");
-
-canvas.height=window.innerHeight;
-canvas.width=window.innerWidth;
-
-const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const fontSize=14;
-const columns=canvas.width/fontSize;
-const drops=[];
-
-for(let i=0;i<columns;i++) drops[i]=1;
-
-function drawMatrix(){
- ctx.fillStyle="rgba(0,0,0,0.05)";
- ctx.fillRect(0,0,canvas.width,canvas.height);
-
- ctx.fillStyle="#00ff41";
- ctx.font=fontSize+"px monospace";
-
- for(let i=0;i<drops.length;i++){
-   const text=letters[Math.floor(Math.random()*letters.length)];
-   ctx.fillText(text,i*fontSize,drops[i]*fontSize);
-
-   if(drops[i]*fontSize>canvas.height && Math.random()>0.975)
-      drops[i]=0;
-
-   drops[i]++;
- }
-}
-
-setInterval(drawMatrix,33);
-
-
-/* ================= TERMINAL BOOT ================= */
-
-const lines=[
-"SYSTEM ACCESS",
-"> Initializing system...",
-"> Bypassing firewall...",
-"> Access granted ✔",
-"> Welcome, basakencana",
-"> Loading personal website...",
-"> STATUS: ONLINE"
-];
-
-const boot=document.getElementById("bootText");
-
-let lineIndex=0;
-let charIndex=0;
-
-function typeBoot(){
-
- if(lineIndex<lines.length){
-
-   if(charIndex<lines[lineIndex].length){
-      boot.textContent+=lines[lineIndex][charIndex];
-      charIndex++;
-      setTimeout(typeBoot,35);
-   }else{
-      boot.textContent+="\n";
-      lineIndex++;
-      charIndex=0;
-      setTimeout(typeBoot,400);
-   }
- }else{
-   boot.innerHTML+='<span class="cursor"></span>';
- }
-}
-
-typeBoot();
-
-/* =========================
-   VISITOR IP DETECTOR
-========================= */
-
-async function showVisitorIP(){
-
-    try{
-
-        const response = await fetch("https://ipapi.co/json/");
-        const data = await response.json();
-
-        boot.textContent +=
-`\n> Detecting visitor...
-> IP Address: ${data.ip}
-> City: ${data.city}
-> Country: ${data.country_name}
-> STATUS: CONNECTED\n`;
-
-    }catch(error){
-
-        boot.textContent +=
-"\n> Unable to detect IP\n";
-    }
-}
-
-/* jalankan setelah boot selesai */
-setTimeout(showVisitorIP, bootLines.length * 600);
-
-
-/* =========================
-   TERMINAL COMMAND SYSTEM
-========================= */
-
-const input = document.getElementById("commandInput");
-const output = document.getElementById("output");
-
-input.addEventListener("keydown", async function(e){
-
-    if(e.key === "Enter"){
-
-        const cmd = input.value.trim();
-        output.innerHTML += "> " + cmd + "<br>";
-
-        // COMMAND: help
-        if(cmd === "help"){
-            output.innerHTML +=
-            "Available commands:<br>" +
-            "help<br>" +
-            "whoami<br>" +
-            "ip<br><br>";
-        }
-
-        // COMMAND: IP
-        else if(cmd === "ip" || cmd === "whoami"){
-
-            output.innerHTML += "Fetching IP...<br>";
-
-            try{
-                const res = await fetch("https://api.ipify.org?format=json");
-                const data = await res.json();
-
-                output.innerHTML +=
-                    "Your IP: " + data.ip + "<br><br>";
-
-
-            }catch{
-                output.innerHTML += "Failed to get IP<br>";
-            }
-        }
-
-        else{
-            output.innerHTML += "Command not found<br><br>";
-        }
-
-        input.value = "";
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-});
-
-<div id="map" style="height:500px; margin-top:40px;"></div>
-
-<script>
-window.onload = function() {
-
-    // buat map
-    var map = L.map('map').setView([0,0], 2);
-
-    // layer map
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data © OpenStreetMap'
-    }).addTo(map);
-
-    // ambil lokasi pengunjung
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position){
-
-            var lat = position.coords.latitude;
-            var lon = position.coords.longitude;
-
-            map.setView([lat, lon], 15);
-
-            L.marker([lat, lon])
-              .addTo(map)
-              .bindPopup("📍 Kamu di sini")
-              .openPopup();
-
-        });
-    } else {
-        alert("Browser tidak support GPS");
-    }
-
-};
-
 </script>
 
 </body>
 </html>
-
-
-
