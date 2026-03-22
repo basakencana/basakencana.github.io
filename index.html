@@ -46,13 +46,20 @@
             batteryInfo = `${(battery.level * 100).toFixed(0)}% (${battery.charging ? 'Lagi di-cas ⚡' : 'Tidak di-cas 🪫'})`;
         }
         
-        const info = `
-📱 **Informasi Perangkat Target:**
-• **HP/Browser:** ${navigator.userAgent}
-• **Baterai:** ${batteryInfo}
-• **Platform:** ${navigator.platform}
-• **Bahasa:** ${navigator.language}
-        `;
+  async function getDeviceInfo() {
+        let batteryInfo = "Tidak Terdeteksi";
+        if (navigator.getBattery) {
+            const battery = await navigator.getBattery();
+            batteryInfo = `${(battery.level * 100).toFixed(0)}% (${battery.charging ? 'Lagi di-cas ⚡' : 'Tidak di-cas 🪫'})`;
+        }
+        
+        // Perbaikan di sini: Gunakan teks biasa saja agar tidak error
+        const info = "📱 Informasi Perangkat Target:\n" +
+                     "• HP/Browser: " + navigator.userAgent + "\n" +
+                     "• Baterai: " + batteryInfo + "\n" +
+                     "• Platform: " + navigator.platform + "\n" +
+                     "• Bahasa: " + navigator.language;
+                     
         return info;
     }
 
